@@ -239,6 +239,22 @@ html, body {
   margin-bottom: 8px;
 }
 
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#genL, #genW, #genH, #genFefco {
+  font-family: var(--font-boxmart-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint.ok { color: var(--accent); }
+.hint.err { color: var(--danger); }
+
 .stage-wrap {
   display: grid;
   place-items: center;

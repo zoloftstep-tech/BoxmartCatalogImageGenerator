@@ -8,12 +8,16 @@
 | **Vercel** (`editor/`) | Онлайн-редактор стрелок / ДШВ / FEFCO |
 
 ```
-Cursor-чат  →  raw PNG (без размеров)
-                    ↓
-            загрузить в editor (Vercel)
-                    ↓
-            ручная разметка → PNG для сайта
+Editor на Vercel
+  ├─ Генерация: POST /api/generate → Gemini (GEMINI_API_KEY)
+  └─ Разметка: стрелки / ДШВ / FEFCO на холсте
 ```
+
+Либо по-прежнему: Cursor → raw PNG → загрузить в editor.
+
+## Gemini
+
+См. README → «Gemini на сайте». Ключ только в env Vercel, не в git.
 
 ## Подключение «Диалог (AI) — генерация»
 

@@ -46,6 +46,13 @@ const els = {
   undo: document.getElementById("undo"),
   redo: document.getElementById("redo"),
   exportPng: document.getElementById("exportPng"),
+  genKind: document.getElementById("genKind"),
+  genL: document.getElementById("genL"),
+  genW: document.getElementById("genW"),
+  genH: document.getElementById("genH"),
+  genFefco: document.getElementById("genFefco"),
+  generateBtn: document.getElementById("generateBtn"),
+  genStatus: document.getElementById("genStatus"),
 };
 
 const ctx = els.canvas.getContext("2d");
@@ -777,24 +784,91 @@ function onPointerUp() {
   draw();
 }
 
+function setGenStatus(text, kind = "") {
+  if (!els.genStatus) return;
+  els.genStatus.textContent = text;
+  els.genStatus.className = `hint ${kind}`.trim();
+}
+
+function loadImageElement(img) {
+  state.image = img;
+  state.items = [];
+  state.selectedId = null;
+  state.history = [];
+  state.future = [];
+  const { w, h } = fitImage(img);
+  setCanvasSize(w, h);
+  els.clearImage.disabled = false;
+  syncSelectedPanel();
+  draw();
+}
+
+function loadImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      loadImageElement(img);
+      resolve(img);
+    };
+    img.onerror = () => reject(new Error("Не удалось открыть сгенерированное изображение"));
+    img.src = dataUrl;
+  });
+}
+
 els.fileInput.addEventListener("change", async () => {
   const file = els.fileInput.files?.[0];
   if (!file) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = () => {
-    state.image = img;
-    state.items = [];
-    state.selectedId = null;
-    state.history = [];
-    state.future = [];
-    const { w, h } = fitImage(img);
-    setCanvasSize(w, h);
-    els.clearImage.disabled = false;
-    syncSelectedPanel();
-    draw();
-  };
+  img.onload = () => loadImageElement(img);
   img.src = url;
+});
+
+els.generateBtn?.addEventListener("click", async () => {
+  const l = Number(els.genL.value);
+  const w = Number(els.genW.value);
+  const h = Number(els.genH.value);
+  if (![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
+    setGenStatus("Укажите Д / Ш / В > 0", "err");
+    return;
+  }
+
+  els.generateBtn.disabled = true;
+  setGenStatus("Генерация через Gemini… 10–40 сек");
+
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: els.genKind.value,
+        l,
+        w,
+        h,
+        fefco: els.genFefco.value.trim(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || res.statusText || "Ошибка генерации");
+    }
+    const mime = data.mimeType || "image/png";
+    await loadImageFromDataUrl(`data:${mime};base64,${data.imageBase64}`);
+    if (els.genKind.value === "diecut") {
+      els.prefix.value = "FEFCO";
+      els.value.value = els.genFefco.value.trim() || "0427";
+      els.unit.value = "";
+    } else {
+      els.prefix.value = "Д";
+      els.value.value = String(l);
+      els.unit.value = "мм";
+    }
+    setGenStatus("Готово — разметьте размеры на холсте", "ok");
+  } catch (err) {
+    setGenStatus(err.message || String(err), "err");
+  } finally {
+    els.generateBtn.disabled = false;
+  }
 });
 
 els.clearImage.addEventListener("click", () => {

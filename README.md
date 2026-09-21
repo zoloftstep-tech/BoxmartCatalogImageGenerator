@@ -20,15 +20,18 @@ cd editor && python3 -m http.server 5173
 # http://127.0.0.1:5173
 ```
 
-## Деплой на Vercel
+## Gemini на сайте
 
-```bash
-git push
-# Import repo на vercel.com → Deploy
-# или: npx vercel --prod
-```
+1. Ключ: [Google AI Studio](https://aistudio.google.com/apikey)
+2. Vercel → Project → Settings → Environment Variables:
+   - `GEMINI_API_KEY` = ваш ключ
+   - опционально `GEMINI_IMAGE_MODEL` = `gemini-2.5-flash-image` (или `gemini-3.1-flash-image`)
+3. Redeploy
+4. В editor: блок **Генерация (Gemini)** → Сгенерировать фото → разметить ДШВ
 
-`vercel.json` отдаёт `/` и статику из `editor/`.
+Локально с API: `npx vercel dev` (подхватит `.env`).
+
+API: `POST /api/generate` `{ kind, l, w, h, fefco? }`
 
 ## Эталоны стиля
 
