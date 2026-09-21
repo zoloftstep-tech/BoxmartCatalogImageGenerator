@@ -1,35 +1,37 @@
 /**
- * POST /api/generate
- * Body: { kind: "assembled"|"diecut", l: number, w: number, h: number, fefco?: string }
- * Returns: { mimeType, imageBase64 }
+ * POST /api/generate  (process existing photo)
+ * Body: {
+ *   kind: "assembled"|"diecut",
+ *   imageBase64: string,  // no data: prefix
+ *   mimeType?: string     // default image/jpeg
+ * }
+ * Returns: { mimeType, imageBase64, model, prompt }
  *
  * Env:
- *   GEMINI_API_KEY (required) — from https://aistudio.google.com/apikey
+ *   GEMINI_API_KEY (required)
  *   GEMINI_IMAGE_MODEL (optional) — default gemini-2.5-flash-image
  */
 
-function buildPrompt({ kind, l, w, h, fefco }) {
-  const L = Number(l);
-  const W = Number(w);
-  const H = Number(h);
+function buildEditPrompt(kind) {
   if (kind === "diecut") {
-    const code = fefco ? String(fefco).trim() : "0427";
     return [
-      `Top-down flat lay of an unfolded kraft corrugated cardboard box blank (FEFCO ${code} style),`,
-      `die-cut with score lines and flaps, exact panel proportions for inner size ${L}×${W}×${H} mm.`,
-      `Pure white background, orthographic, no perspective, no shadow, no text, no arrows,`,
-      `no handwritten marks, no watermark, no FEFCO text on the cardboard.`,
-      `Catalog technical plate style. Generous white margin around the blank.`,
+      "Edit this exact product photo of a cardboard box die-cut / flat blank.",
+      "Keep the same cardboard piece: geometry, flaps, slots, proportions, and top-down orientation.",
+      "Remove background, table edges, floor, machines, hands, graffiti, handwritten marks, and any text overlays.",
+      "Place on a pure white seamless background, orthographic catalog plate, no drop shadow.",
+      "Slightly improve clarity and even lighting for a consistent ecommerce look.",
+      "Do NOT redesign the blank, do NOT add text, arrows, dimensions, FEFCO labels, or watermarks.",
+      "Leave generous white margin around the subject for later annotations.",
     ].join(" ");
   }
   return [
-    `Product photo of a closed kraft corrugated cardboard shipping box,`,
-    `exact proportions length×width×height = ${L}×${W}×${H} mm.`,
-    `Three-quarter studio angle, soft diffused light, subtle contact shadow.`,
-    `Seamless light gray #F5F5F5 background.`,
-    `No text, no arrows, no labels, no watermark, no people, no table clutter.`,
-    `Sharp edges, realistic cardboard texture, catalog ecommerce style.`,
-    `Generous empty margin around the box for later dimension annotations.`,
+    "Edit this exact product photo of a kraft corrugated cardboard box.",
+    "Keep the same box identity: shape, proportions, folds, and camera angle.",
+    "Remove background clutter (tables, rollers, workshop, hands), graffiti, handwritten numbers, and UI overlays.",
+    "Place on a seamless light gray #F5F5F5 studio background with a soft natural contact shadow.",
+    "Improve lighting and sharpness slightly for a consistent Boxmart catalog style.",
+    "Do NOT redesign the box, do NOT add text, arrows, dimension labels, or watermarks.",
+    "Leave generous empty margin around the box for later size annotations.",
   ].join(" ");
 }
 
@@ -47,17 +49,20 @@ function extractImage(payload) {
   return null;
 }
 
+function stripDataUrl(input) {
+  if (!input || typeof input !== "string") return { mimeType: null, data: null };
+  const m = input.match(/^data:([^;]+);base64,(.+)$/);
+  if (m) return { mimeType: m[1], data: m[2] };
+  return { mimeType: null, data: input.replace(/\s/g, "") };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
@@ -66,17 +71,36 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body || "{}");
+    } catch {
+      return res.status(400).json({ error: "Invalid JSON" });
+    }
+  }
+  body = body || {};
+
   const kind = body.kind === "diecut" ? "diecut" : "assembled";
-  const l = Number(body.l);
-  const w = Number(body.w);
-  const h = Number(body.h);
-  if (![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
-    return res.status(400).json({ error: "Укажите l, w, h > 0 (мм)" });
+  const parsed = stripDataUrl(body.imageBase64 || body.image || "");
+  const mimeType = body.mimeType || parsed.mimeType || "image/jpeg";
+  const imageData = parsed.data;
+
+  if (!imageData || imageData.length < 32) {
+    return res.status(400).json({
+      error: "Нужно исходное фото: imageBase64 (загрузите снимок, затем обработайте).",
+    });
+  }
+
+  // ~4MB base64 safety for serverless payload
+  if (imageData.length > 5_500_000) {
+    return res.status(413).json({
+      error: "Фото слишком большое. Уменьшите до ~1600px по длинной стороне.",
+    });
   }
 
   const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
-  const prompt = buildPrompt({ kind, l, w, h, fefco: body.fefco });
+  const prompt = buildEditPrompt(kind);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   try {
@@ -87,7 +111,15 @@ module.exports = async function handler(req, res) {
         "x-goog-api-key": key,
       },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: imageData } },
+            ],
+          },
+        ],
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
         },

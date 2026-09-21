@@ -18,6 +18,7 @@ const FONT_PLAIN = `500 13px "Fira Sans", sans-serif`;
 const state = {
   tool: "select",
   image: null,
+  sourceDataUrl: null,
   items: [],
   selectedId: null,
   drag: null,
@@ -47,10 +48,6 @@ const els = {
   redo: document.getElementById("redo"),
   exportPng: document.getElementById("exportPng"),
   genKind: document.getElementById("genKind"),
-  genL: document.getElementById("genL"),
-  genW: document.getElementById("genW"),
-  genH: document.getElementById("genH"),
-  genFefco: document.getElementById("genFefco"),
   generateBtn: document.getElementById("generateBtn"),
   genStatus: document.getElementById("genStatus"),
 };
@@ -790,8 +787,16 @@ function setGenStatus(text, kind = "") {
   els.genStatus.className = `hint ${kind}`.trim();
 }
 
-function loadImageElement(img) {
+function syncProcessButton() {
+  if (!els.generateBtn) return;
+  els.generateBtn.disabled = !state.sourceDataUrl;
+}
+
+function loadImageElement(img, { asSource = true, dataUrl = null } = {}) {
   state.image = img;
+  if (asSource) {
+    state.sourceDataUrl = dataUrl;
+  }
   state.items = [];
   state.selectedId = null;
   state.history = [];
@@ -799,85 +804,100 @@ function loadImageElement(img) {
   const { w, h } = fitImage(img);
   setCanvasSize(w, h);
   els.clearImage.disabled = false;
+  syncProcessButton();
   syncSelectedPanel();
   draw();
 }
 
-function loadImageFromDataUrl(dataUrl) {
+function loadImageFromDataUrl(dataUrl, { asSource = false } = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      loadImageElement(img);
+      loadImageElement(img, { asSource, dataUrl: asSource ? dataUrl : state.sourceDataUrl });
       resolve(img);
     };
-    img.onerror = () => reject(new Error("Не удалось открыть сгенерированное изображение"));
+    img.onerror = () => reject(new Error("Не удалось открыть изображение"));
     img.src = dataUrl;
   });
+}
+
+/** Downscale for Gemini payload limits; returns { mimeType, imageBase64 } */
+function encodeImageForApi(img, maxSide = 1600, quality = 0.9) {
+  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+  const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+  const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const cctx = c.getContext("2d");
+  cctx.fillStyle = "#ffffff";
+  cctx.fillRect(0, 0, w, h);
+  cctx.drawImage(img, 0, 0, w, h);
+  const dataUrl = c.toDataURL("image/jpeg", quality);
+  const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  return { mimeType: m[1], imageBase64: m[2] };
 }
 
 els.fileInput.addEventListener("change", async () => {
   const file = els.fileInput.files?.[0];
   if (!file) return;
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => loadImageElement(img);
-  img.src = url;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      await loadImageFromDataUrl(String(reader.result), { asSource: true });
+      setGenStatus("Фото загружено — можно обработать через Gemini", "ok");
+    } catch (err) {
+      setGenStatus(err.message || String(err), "err");
+    }
+  };
+  reader.readAsDataURL(file);
 });
 
 els.generateBtn?.addEventListener("click", async () => {
-  const l = Number(els.genL.value);
-  const w = Number(els.genW.value);
-  const h = Number(els.genH.value);
-  if (![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
-    setGenStatus("Укажите Д / Ш / В > 0", "err");
+  if (!state.image || !state.sourceDataUrl) {
+    setGenStatus("Сначала загрузите фото", "err");
     return;
   }
 
   els.generateBtn.disabled = true;
-  setGenStatus("Генерация через Gemini… 10–40 сек");
+  setGenStatus("Обработка Gemini: фон + единый стиль… 10–40 сек");
 
   try {
+    // Prefer current canvas image (already displayed), encoded from source bitmap
+    const payload = encodeImageForApi(state.image);
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: els.genKind.value,
-        l,
-        w,
-        h,
-        fefco: els.genFefco.value.trim(),
+        mimeType: payload.mimeType,
+        imageBase64: payload.imageBase64,
       }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.error || res.statusText || "Ошибка генерации");
+      throw new Error(data.error || res.statusText || "Ошибка обработки");
     }
     const mime = data.mimeType || "image/png";
-    await loadImageFromDataUrl(`data:${mime};base64,${data.imageBase64}`);
-    if (els.genKind.value === "diecut") {
-      els.prefix.value = "FEFCO";
-      els.value.value = els.genFefco.value.trim() || "0427";
-      els.unit.value = "";
-    } else {
-      els.prefix.value = "Д";
-      els.value.value = String(l);
-      els.unit.value = "мм";
-    }
-    setGenStatus("Готово — разметьте размеры на холсте", "ok");
+    await loadImageFromDataUrl(`data:${mime};base64,${data.imageBase64}`, { asSource: true });
+    setGenStatus("Готово — разметьте Д×Ш×В на холсте", "ok");
   } catch (err) {
     setGenStatus(err.message || String(err), "err");
   } finally {
-    els.generateBtn.disabled = false;
+    syncProcessButton();
   }
 });
 
 els.clearImage.addEventListener("click", () => {
   state.image = null;
+  state.sourceDataUrl = null;
   state.items = [];
   state.selectedId = null;
   setCanvasSize(640, 420);
   els.clearImage.disabled = true;
   els.fileInput.value = "";
+  syncProcessButton();
+  setGenStatus("Сначала загрузите фото коробки.");
   syncSelectedPanel();
   draw();
 });

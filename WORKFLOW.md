@@ -9,11 +9,10 @@
 
 ```
 Editor на Vercel
-  ├─ Генерация: POST /api/generate → Gemini (GEMINI_API_KEY)
-  └─ Разметка: стрелки / ДШВ / FEFCO на холсте
+  ├─ Загрузка сырого фото
+  ├─ Gemini: очистка фона + единый стиль (POST /api/generate + image)
+  └─ Ручная разметка: стрелки / ДШВ / FEFCO
 ```
-
-Либо по-прежнему: Cursor → raw PNG → загрузить в editor.
 
 ## Gemini
 

@@ -22,16 +22,16 @@ cd editor && python3 -m http.server 5173
 
 ## Gemini на сайте
 
+Обработка **существующего** фото (не генерация коробки с нуля):
+
 1. Ключ: [Google AI Studio](https://aistudio.google.com/apikey)
-2. Vercel → Project → Settings → Environment Variables:
-   - `GEMINI_API_KEY` = ваш ключ
-   - опционально `GEMINI_IMAGE_MODEL` = `gemini-2.5-flash-image` (или `gemini-3.1-flash-image`)
+2. Vercel env: `GEMINI_API_KEY` (+ опционально `GEMINI_IMAGE_MODEL`)
 3. Redeploy
-4. В editor: блок **Генерация (Gemini)** → Сгенерировать фото → разметить ДШВ
+4. Editor: загрузить фото → тип кадра → **Очистить фон и выровнять стиль** → разметить ДШВ
 
-Локально с API: `npx vercel dev` (подхватит `.env`).
+Локально: `.env` + `npx vercel dev`.
 
-API: `POST /api/generate` `{ kind, l, w, h, fefco? }`
+`POST /api/generate` `{ kind, imageBase64, mimeType }`
 
 ## Эталоны стиля
 

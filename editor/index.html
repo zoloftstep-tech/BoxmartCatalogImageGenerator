@@ -16,34 +16,8 @@
         <p class="brand-mark">BOXMART</p>
         <h1>Catalog Annotate</h1>
         <p class="brand-lead">Разметка Д×Ш×В и FEFCO на каталожных фото</p>
-        <p class="sub-note">Генерация raw — Gemini (кнопка ниже) или Cursor. Размеры наносите вручную на холсте.</p>
+        <p class="sub-note">Загрузите фото → Gemini очистит фон и приведёт к единому стилю → разметьте Д×Ш×В вручную.</p>
       </header>
-
-      <section class="block">
-        <h2>Генерация (Gemini)</h2>
-        <label class="field">Тип
-          <select id="genKind">
-            <option value="assembled">Собранная</option>
-            <option value="diecut">Развёртка</option>
-          </select>
-        </label>
-        <div class="row3">
-          <label class="field">Д, мм
-            <input id="genL" type="number" min="1" value="450" />
-          </label>
-          <label class="field">Ш, мм
-            <input id="genW" type="number" min="1" value="120" />
-          </label>
-          <label class="field">В, мм
-            <input id="genH" type="number" min="1" value="30" />
-          </label>
-        </div>
-        <label class="field">FEFCO (для развёртки)
-          <input id="genFefco" type="text" value="0427" placeholder="0427" />
-        </label>
-        <button type="button" id="generateBtn" class="primary">Сгенерировать фото</button>
-        <p class="hint" id="genStatus"></p>
-      </section>
 
       <section class="block">
         <h2>Фото</h2>
@@ -52,6 +26,18 @@
           <input id="fileInput" type="file" accept="image/*" hidden />
         </label>
         <button id="clearImage" type="button" class="ghost" disabled>Убрать фото</button>
+      </section>
+
+      <section class="block">
+        <h2>Обработка (Gemini)</h2>
+        <label class="field">Тип кадра
+          <select id="genKind">
+            <option value="assembled">Собранная</option>
+            <option value="diecut">Развёртка</option>
+          </select>
+        </label>
+        <button type="button" id="generateBtn" class="primary" disabled>Очистить фон и выровнять стиль</button>
+        <p class="hint" id="genStatus">Сначала загрузите фото коробки.</p>
       </section>
 
       <section class="block">

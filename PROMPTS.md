@@ -1,17 +1,22 @@
-# Промпты для диалога (копия из rules)
+# Промпты обработки фото (не генерация с нуля)
 
-Единицы только мм. На AI-картинке **не** рисовать размеры — их добавит `cig annotate`.
+На вход — реальное фото. Задача: фон + единый каталожный стиль, без смены геометрии коробки.
 
 ## Assembled
 
 ```
-Product photo of a closed kraft corrugated cardboard shipping box, exact proportions length×width×height = {L}×{W}×{H} mm. Three-quarter studio angle, soft diffused light, subtle contact shadow. Seamless light gray #F5F5F5 background. No text, no arrows, no labels, no watermark, no people, no table clutter. Sharp edges, realistic cardboard texture, catalog ecommerce style.
+Edit this exact product photo of a kraft corrugated cardboard box.
+Keep the same box identity: shape, proportions, folds, and camera angle.
+Remove background clutter, graffiti, handwritten numbers, and UI overlays.
+Place on seamless light gray #F5F5F5 with soft contact shadow.
+Slight catalog lighting cleanup. No text, arrows, dimensions, watermarks. Generous margin.
 ```
 
 ## Diecut
 
 ```
-Top-down flat lay of an unfolded kraft corrugated cardboard box blank (FEFCO {code} style), die-cut with score lines and flaps, exact panel proportions for inner size {L}×{W}×{H} mm. Pure white background, orthographic, no perspective, no shadow, no text, no arrows, no handwritten marks, no watermark. Catalog technical plate style.
+Edit this exact die-cut / flat blank photo.
+Keep geometry, flaps, slots, top-down orientation.
+Remove background and marks. Pure white background, no shadow.
+No text/FEFCO/arrows on the cardboard. Generous white margin.
 ```
-
-После генерации откройте `editor/index.html` и разместите размеры вручную.
