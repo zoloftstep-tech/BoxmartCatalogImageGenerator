@@ -1,0 +1,235 @@
+:root {
+  --bg: #ece7df;
+  --panel: #f7f4ef;
+  --ink: #1c1a17;
+  --muted: #6b645b;
+  --line: #d4cdc2;
+  --accent: #2f5d50;
+  --accent-ink: #f4faf7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 500px at 10% -10%, #ddd4c6 0%, transparent 60%),
+    radial-gradient(700px 400px at 100% 0%, #cfd9d4 0%, transparent 55%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.drop {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  border: 1.5px dashed #b7aea1;
+  border-radius: 12px;
+  background: #fffdf9;
+  cursor: pointer;
+  padding: 12px;
+  text-align: center;
+  color: var(--muted);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.drop.drag {
+  border-color: var(--accent);
+  background: #eef6f2;
+}
+
+.drop img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.row3, .row2 {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.row3 { grid-template-columns: repeat(3, 1fr); }
+.row2 { grid-template-columns: 1fr 1fr; }
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  background: #fff;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 14px;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.btn {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status.err { color: #8a2f2f; }
+.status.ok { color: var(--accent); }
+
+.result-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.result-head h2,
+.result-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.result-frame {
+  min-height: 320px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(45deg, #e8e2d8 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(-45deg, #e8e2d8 25%, transparent 25%) 0 0 / 16px 16px,
+    #fffdf9;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.result-frame img {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.muted { color: var(--muted); }
+
+.link, .linkish {
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.outputs { margin-top: 16px; }
+
+.file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.file-list a {
+  color: var(--ink);
+  text-decoration: none;
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+
+.file-list a:hover { border-color: var(--accent); }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr; }
+  .row3 { grid-template-columns: 1fr; }
+}

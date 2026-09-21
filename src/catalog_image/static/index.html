@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog Image Generator — Annotate</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div>
+        <h1>Annotate</h1>
+        <p class="sub">Готовое каталожное фото → стрелки и Д×Ш×В (мм) в едином стиле. Генерация фото — в Cursor-диалоге.</p>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <form id="form">
+          <label class="drop" id="drop">
+            <input type="file" id="file" accept="image/*" required hidden />
+            <span id="dropText">Готовое фото без размеров (AI / студия)</span>
+            <img id="previewIn" alt="" hidden />
+          </label>
+
+          <div class="row3">
+            <label>Д, мм
+              <input type="number" name="length" id="length" min="1" value="450" required />
+            </label>
+            <label>Ш, мм
+              <input type="number" name="width" id="width" min="1" value="120" required />
+            </label>
+            <label>В, мм
+              <input type="number" name="height" id="height" min="1" value="30" required />
+            </label>
+          </div>
+
+          <div class="row2">
+            <label>Тип
+              <select name="kind" id="kind">
+                <option value="assembled">Собранная</option>
+                <option value="diecut">Развёртка</option>
+              </select>
+            </label>
+            <label>FEFCO
+              <input type="text" name="fefco" id="fefco" placeholder="0427" />
+            </label>
+          </div>
+
+          <div class="row2">
+            <label>Цвет полей
+              <input type="color" name="bg" id="bg" value="#f5f5f5" />
+            </label>
+            <label>Формат
+              <select name="fmt" id="fmt">
+                <option value="PNG">PNG</option>
+                <option value="JPEG">JPEG</option>
+                <option value="WEBP">WEBP</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" id="draw_dims" checked />
+            Рисовать размеры
+          </label>
+
+          <button type="submit" id="run" class="btn">Нанести размеры и сохранить</button>
+          <p id="status" class="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="panel result">
+        <div class="result-head">
+          <h2>Результат</h2>
+          <a id="download" class="link" hidden download>Скачать</a>
+        </div>
+        <div class="result-frame" id="resultFrame">
+          <p class="muted">Эталон стиля: refs/style-*.png</p>
+          <img id="previewOut" alt="Результат" hidden />
+        </div>
+        <div class="outputs">
+          <div class="result-head">
+            <h3>Файлы в output/</h3>
+            <button type="button" id="refresh" class="linkish">Обновить</button>
+          </div>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

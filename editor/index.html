@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog Annotate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Fira+Sans:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <header class="brand">
+        <h1>Catalog Annotate</h1>
+        <p>Ручная разметка размеров на готовом фото</p>
+        <p class="sub-note">Генерация фото — в Cursor (правила проекта). Сюда загружаете уже готовый raw-кадр.</p>
+      </header>
+
+      <section class="block">
+        <h2>1. Фото</h2>
+        <label class="file-btn">
+          Выбрать изображение
+          <input id="fileInput" type="file" accept="image/*" hidden />
+        </label>
+        <button id="clearImage" type="button" class="ghost" disabled>Убрать фото</button>
+      </section>
+
+      <section class="block">
+        <h2>2. Инструмент</h2>
+        <div class="tools" role="toolbar">
+          <button type="button" class="tool active" data-tool="select" title="Выбор / перетаскивание">Выбор</button>
+          <button type="button" class="tool" data-tool="dim-h" title="Горизонтальный размер">Размер →</button>
+          <button type="button" class="tool" data-tool="dim-v" title="Вертикальный размер">Размер ↓</button>
+          <button type="button" class="tool" data-tool="dim-free" title="Размер под любым углом">Размер ∠</button>
+          <button type="button" class="tool" data-tool="label" title="Подпись / плашка">Текст</button>
+          <button type="button" class="tool" data-tool="fefco" title="FEFCO бейдж">FEFCO</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>3. Данные</h2>
+        <label class="field">Префикс
+          <select id="prefix">
+            <option value="Д">Д</option>
+            <option value="Ш">Ш</option>
+            <option value="В">В</option>
+            <option value="">—</option>
+            <option value="FEFCO">FEFCO</option>
+          </select>
+        </label>
+        <label class="field">Значение
+          <input id="value" type="text" value="450" placeholder="450 или 0427" />
+        </label>
+        <label class="field">Единицы
+          <input id="unit" type="text" value="мм" />
+        </label>
+        <label class="field check">
+          <input id="plaque" type="checkbox" />
+          FEFCO: тёмная подложка (иначе синий текст)
+        </label>
+        <p class="hint" id="hint">Выберите инструмент и кликните на холсте (для размера — протяните).</p>
+      </section>
+
+      <section class="block" id="selectedPanel" hidden>
+        <h2>Выбранный объект</h2>
+        <label class="field">Текст
+          <input id="selText" type="text" />
+        </label>
+        <label class="field">Длина линии, px
+          <input id="selLength" type="number" min="20" step="1" />
+        </label>
+        <label class="field">Угол подписи, °
+          <input id="selAngle" type="number" step="1" />
+        </label>
+        <p class="hint">Подпись: тяните за текст. Поворот: круглая ручка рядом. Концы стрелок — угол линии.</p>
+        <div class="row">
+          <button type="button" id="bringFront" class="ghost">Наверх</button>
+          <button type="button" id="deleteSel" class="danger">Удалить</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>4. Экспорт</h2>
+        <div class="row">
+          <button type="button" id="undo" class="ghost">Undo</button>
+          <button type="button" id="redo" class="ghost">Redo</button>
+        </div>
+        <button type="button" id="exportPng" class="primary">Скачать PNG</button>
+      </section>
+    </aside>
+
+    <main class="stage-wrap">
+      <div class="stage" id="stage">
+        <canvas id="canvas"></canvas>
+        <div class="empty" id="empty">Загрузите фото коробки</div>
+      </div>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>

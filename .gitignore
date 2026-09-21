@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+output/*
+!output/.gitkeep
+.pytest_cache/
+.ruff_cache/
+*.onnx
+.idea/
+.vscode/
+.vercel/
