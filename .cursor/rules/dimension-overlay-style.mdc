@@ -7,7 +7,14 @@ alwaysApply: true
 
 Основной инструмент: **`editor/`** (локальный HTML/JS или Vercel).
 
-## Типографика подписей
+## Типографика UI (как на сайте Boxmart)
+
+- Sans / display: Fira Sans (`--font-boxmart-sans`), tracking-tight на заголовках
+- Mono: Fira Code (`--font-boxmart-mono`) для цифр в полях
+- Цвета: ink `#333`, muted `#666`, accent `#415ac1`, kraft `#8b7355`, surface `#f9f9f9`, line `#ebebeb`
+- Радиусы: 8 / 10 / 14
+
+## Типографика подписей на фото
 
 **FEFCO**
 - Fira Sans SemiBold 12–14px, uppercase, tracking-wider

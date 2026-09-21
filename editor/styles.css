@@ -1,12 +1,20 @@
 :root {
-  --bg: #e8e2d8;
-  --panel: #f6f1ea;
-  --ink: #1b1916;
-  --muted: #6d655c;
-  --line: #d2c8ba;
-  --accent: #2c5c4f;
-  --accent-ink: #f3faf6;
-  --danger: #8f2f2f;
+  --font-boxmart-sans: "Fira Sans", system-ui, sans-serif;
+  --font-boxmart-mono: "Fira Code", ui-monospace, monospace;
+
+  --ink: #333333;
+  --ink-soft: #666666;
+  --muted: #666666;
+  --accent: #415ac1;
+  --kraft: #8b7355;
+  --surface: #f9f9f9;
+  --surface-elevated: #ffffff;
+  --line: #ebebeb;
+  --danger: #b42318;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 }
 
 * { box-sizing: border-box; }
@@ -14,9 +22,11 @@
 html, body {
   margin: 0;
   height: 100%;
-  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-boxmart-sans);
+  font-weight: 400;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -27,46 +37,72 @@ html, body {
 }
 
 .sidebar {
-  background: var(--panel);
+  background: var(--surface-elevated);
   border-right: 1px solid var(--line);
-  padding: 18px 16px 28px;
+  padding: 20px 16px 28px;
   overflow: auto;
+}
+
+.brand-mark {
+  margin: 0 0 8px;
+  font-family: var(--font-boxmart-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .brand h1 {
   margin: 0;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
+  font-family: var(--font-boxmart-sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 
-.brand p {
+.brand-lead {
   margin: 6px 0 0;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
   color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.35;
 }
 
 .brand .sub-note {
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #efe8dc;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   border: 1px solid var(--line);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted);
 }
 
 .block {
   margin-top: 18px;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
 .block h2 {
   margin: 0 0 10px;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--muted);
+}
+
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  border-top: 1px solid var(--line);
 }
 
 .tools {
@@ -75,24 +111,38 @@ html, body {
   gap: 8px;
 }
 
-.tool, .file-btn, .primary, .ghost, .danger {
-  border-radius: 9px;
+.tool,
+.file-btn,
+.primary,
+.ghost,
+.danger {
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface-elevated);
   color: var(--ink);
-  font: inherit;
+  font-family: var(--font-boxmart-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
   padding: 9px 10px;
   cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.tool:hover,
+.ghost:hover:not(:disabled),
+.file-btn:hover {
+  border-color: #d4d4d4;
 }
 
 .tool.active {
   border-color: var(--accent);
-  background: #e7f3ee;
+  background: color-mix(in srgb, var(--accent) 10%, white);
   color: var(--accent);
   font-weight: 600;
 }
 
-.file-btn, .primary {
+.file-btn,
+.primary {
   display: block;
   width: 100%;
   text-align: center;
@@ -102,34 +152,67 @@ html, body {
 .primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-ink);
+  color: #fff;
   font-weight: 600;
 }
 
-.ghost { width: 100%; background: transparent; }
+.primary:hover {
+  filter: brightness(0.96);
+}
+
+.ghost {
+  width: 100%;
+  background: transparent;
+}
+
+.ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .danger {
   width: 100%;
-  border-color: #e0b4b4;
+  border-color: #f0d0cc;
   color: var(--danger);
-  background: #fff5f5;
+  background: #fff8f7;
 }
 
 .field {
   display: grid;
   gap: 5px;
   margin-bottom: 10px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--muted);
 }
 
-.field input, .field select {
+.field input,
+.field select {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
-  font: inherit;
+  font-family: var(--font-boxmart-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
   color: var(--ink);
-  background: #fff;
+  background: var(--surface-elevated);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+#value,
+#selLength,
+#selAngle,
+#unit {
+  font-family: var(--font-boxmart-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .field.check {
@@ -137,14 +220,16 @@ html, body {
   align-items: center;
   gap: 8px;
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .hint {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.35;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .row {
@@ -157,19 +242,20 @@ html, body {
 .stage-wrap {
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: 20px;
   overflow: auto;
+  background: var(--surface);
 }
 
 .stage {
   position: relative;
   background:
-    linear-gradient(45deg, #ddd6cb 25%, transparent 25%) 0 0 / 18px 18px,
-    linear-gradient(-45deg, #ddd6cb 25%, transparent 25%) 0 0 / 18px 18px,
-    #f7f3ec;
+    linear-gradient(45deg, #efefef 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(-45deg, #efefef 25%, transparent 25%) 0 0 / 16px 16px,
+    var(--surface-elevated);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(51, 51, 51, 0.04);
   max-width: 100%;
 }
 
@@ -178,7 +264,7 @@ html, body {
   max-width: 100%;
   height: auto;
   cursor: crosshair;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 #canvas.select-mode { cursor: default; }
@@ -189,6 +275,8 @@ html, body {
   display: grid;
   place-items: center;
   color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
   pointer-events: none;
   min-width: 420px;
   min-height: 320px;

@@ -474,7 +474,7 @@ function drawHandle(c, x, y) {
 }
 
 function varAccent() {
-  return "#2c5c4f";
+  return "#415ac1";
 }
 
 function draw() {
