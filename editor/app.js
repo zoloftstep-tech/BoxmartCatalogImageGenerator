@@ -10,6 +10,18 @@ const DIM_SIZE = 13;
 const AXIS_SIZE = 11;
 const FEFCO_SIZE = 13;
 
+function isCoarsePointer() {
+  return window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 900;
+}
+
+function hitSlop() {
+  return isCoarsePointer() ? 22 : 12;
+}
+
+function handleSize() {
+  return isCoarsePointer() ? 12 : HANDLE;
+}
+
 const FONT_AXIS = `${AXIS_SIZE}px "Fira Sans", sans-serif`;
 const FONT_DIM = `500 ${DIM_SIZE}px "Fira Code", monospace`;
 const FONT_FEFCO = `600 ${FEFCO_SIZE}px "Fira Sans", sans-serif`;
@@ -50,6 +62,8 @@ const els = {
   genKind: document.getElementById("genKind"),
   generateBtn: document.getElementById("generateBtn"),
   genStatus: document.getElementById("genStatus"),
+  togglePanel: document.getElementById("togglePanel"),
+  appRoot: document.querySelector(".app"),
 };
 
 const ctx = els.canvas.getContext("2d");
@@ -174,8 +188,15 @@ function setCanvasSize(w, h) {
 }
 
 function fitImage(img) {
-  const maxW = Math.min(1100, window.innerWidth - 360);
-  const maxH = window.innerHeight - 48;
+  const mobile = window.innerWidth <= 900;
+  const dock = mobile ? 72 : 0;
+  const bar = mobile ? 56 : 0;
+  const side = mobile ? 20 : 360;
+  const maxW = Math.max(200, Math.min(1100, window.innerWidth - side));
+  const maxH = Math.max(180, Math.min(
+    mobile ? window.innerHeight * 0.42 : window.innerHeight - 48,
+    window.innerHeight - bar - dock - 24,
+  ));
   const scale = Math.min(maxW / img.width, maxH / img.height, 1);
   return {
     w: Math.round(img.width * scale),
@@ -468,11 +489,12 @@ function drawLabel(c, item, showHandles) {
 }
 
 function drawHandle(c, x, y) {
+  const s = handleSize();
   c.fillStyle = "#fff";
   c.strokeStyle = varAccent();
   c.lineWidth = 2;
   c.beginPath();
-  c.rect(x - HANDLE / 2, y - HANDLE / 2, HANDLE, HANDLE);
+  c.rect(x - s / 2, y - s / 2, s, s);
   c.fill();
   c.stroke();
 }
@@ -524,28 +546,29 @@ function pointInRotatedLabel(p, item) {
 }
 
 function hitTest(p) {
+  const slop = hitSlop();
   for (let i = state.items.length - 1; i >= 0; i--) {
     const item = state.items[i];
     if (item.type === "dim") {
       ensureLabelPose(item);
       const rh = rotHandlePos(item);
-      if (dist(p, rh) <= 10) return { item, handle: "label-rot" };
-      if (pointInRotatedLabel(p, item) || dist(p, { x: item.labelX, y: item.labelY }) <= 12) {
+      if (dist(p, rh) <= slop) return { item, handle: "label-rot" };
+      if (pointInRotatedLabel(p, item) || dist(p, { x: item.labelX, y: item.labelY }) <= slop) {
         return { item, handle: "label-move" };
       }
-      if (dist(p, { x: item.x1, y: item.y1 }) <= 12) return { item, handle: "a" };
-      if (dist(p, { x: item.x2, y: item.y2 }) <= 12) return { item, handle: "b" };
+      if (dist(p, { x: item.x1, y: item.y1 }) <= slop) return { item, handle: "a" };
+      if (dist(p, { x: item.x2, y: item.y2 }) <= slop) return { item, handle: "b" };
       const mx = (item.x1 + item.x2) / 2;
       const my = (item.y1 + item.y2) / 2;
-      if (dist(p, { x: mx, y: my }) <= 12) return { item, handle: "move" };
-      if (distToSegment(p, item) < 8) return { item, handle: "move" };
+      if (dist(p, { x: mx, y: my }) <= slop) return { item, handle: "move" };
+      if (distToSegment(p, item) < Math.max(8, slop * 0.55)) return { item, handle: "move" };
     } else {
       if (item.labelAngle == null) item.labelAngle = 0;
       const rh = {
         x: item.x + Math.cos(((item.labelAngle || 0) * Math.PI) / 180) * ROT_HANDLE,
         y: item.y + Math.sin(((item.labelAngle || 0) * Math.PI) / 180) * ROT_HANDLE,
       };
-      if (dist(p, rh) <= 10) return { item, handle: "label-rot" };
+      if (dist(p, rh) <= slop) return { item, handle: "label-rot" };
       if (pointInRotatedLabel(p, item)) return { item, handle: "move" };
     }
   }
@@ -633,6 +656,7 @@ function makeDimPreview(x1, y1, x2, y2) {
 
 function onPointerDown(e) {
   if (!state.image) return;
+  e.preventDefault();
   const p = pointer(e);
   els.canvas.setPointerCapture?.(e.pointerId);
 
@@ -700,6 +724,7 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   if (!state.drag) return;
+  e.preventDefault();
   const p = pointer(e);
 
   if (state.drag.mode === "create-dim") {
@@ -880,6 +905,32 @@ document.querySelectorAll(".tool").forEach((btn) => {
   btn.addEventListener("click", () => setTool(btn.dataset.tool));
 });
 
+els.togglePanel?.addEventListener("click", () => {
+  const collapsed = els.appRoot.classList.toggle("panel-collapsed");
+  els.togglePanel.setAttribute("aria-expanded", String(!collapsed));
+  els.togglePanel.textContent = collapsed ? "Панель" : "Скрыть";
+  if (state.image) {
+    const { w, h } = fitImage(state.image);
+    setCanvasSize(w, h);
+    draw();
+  }
+});
+
+if (els.togglePanel && window.innerWidth <= 900) {
+  els.togglePanel.textContent = "Скрыть";
+}
+
+let resizeTimer = 0;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!state.image) return;
+    const { w, h } = fitImage(state.image);
+    setCanvasSize(w, h);
+    draw();
+  }, 120);
+});
+
 els.selText.addEventListener("input", () => {
   const item = selected();
   if (!item) return;
@@ -985,7 +1036,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "t") setTool("label");
 });
 
-setCanvasSize(640, 420);
+setCanvasSize(Math.min(640, Math.max(280, window.innerWidth - 24)), Math.min(420, Math.max(220, window.innerHeight * 0.4)));
 setTool("select");
 
 if (document.fonts?.ready) {
