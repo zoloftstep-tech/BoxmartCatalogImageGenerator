@@ -821,23 +821,6 @@ function loadImageFromDataUrl(dataUrl, { asSource = false } = {}) {
   });
 }
 
-/** Downscale for Gemini payload limits; returns { mimeType, imageBase64 } */
-function encodeImageForApi(img, maxSide = 1600, quality = 0.9) {
-  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
-  const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-  const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const cctx = c.getContext("2d");
-  cctx.fillStyle = "#ffffff";
-  cctx.fillRect(0, 0, w, h);
-  cctx.drawImage(img, 0, 0, w, h);
-  const dataUrl = c.toDataURL("image/jpeg", quality);
-  const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  return { mimeType: m[1], imageBase64: m[2] };
-}
-
 els.fileInput.addEventListener("change", async () => {
   const file = els.fileInput.files?.[0];
   if (!file) return;
@@ -845,7 +828,7 @@ els.fileInput.addEventListener("change", async () => {
   reader.onload = async () => {
     try {
       await loadImageFromDataUrl(String(reader.result), { asSource: true });
-      setGenStatus("Фото загружено — можно обработать через Gemini", "ok");
+      setGenStatus("Фото загружено — можно очистить фон", "ok");
     } catch (err) {
       setGenStatus(err.message || String(err), "err");
     }
@@ -860,28 +843,19 @@ els.generateBtn?.addEventListener("click", async () => {
   }
 
   els.generateBtn.disabled = true;
-  setGenStatus("Обработка Gemini: фон + единый стиль… 10–40 сек");
+  setGenStatus("Готовлю обработку…");
 
   try {
-    // Prefer current canvas image (already displayed), encoded from source bitmap
-    const payload = encodeImageForApi(state.image);
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: els.genKind.value,
-        mimeType: payload.mimeType,
-        imageBase64: payload.imageBase64,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || res.statusText || "Ошибка обработки");
-    }
-    const mime = data.mimeType || "image/png";
-    await loadImageFromDataUrl(`data:${mime};base64,${data.imageBase64}`, { asSource: true });
+    const { processCatalogPhoto } = await import("./process.js");
+    const dataUrl = await processCatalogPhoto(
+      state.image,
+      els.genKind.value === "diecut" ? "diecut" : "assembled",
+      (msg) => setGenStatus(msg),
+    );
+    await loadImageFromDataUrl(dataUrl, { asSource: true });
     setGenStatus("Готово — разметьте Д×Ш×В на холсте", "ok");
   } catch (err) {
+    console.error(err);
     setGenStatus(err.message || String(err), "err");
   } finally {
     syncProcessButton();

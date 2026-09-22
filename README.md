@@ -20,18 +20,16 @@ cd editor && python3 -m http.server 5173
 # http://127.0.0.1:5173
 ```
 
-## Gemini на сайте
+## Обработка фото (без ключей)
 
-Обработка **существующего** фото (не генерация коробки с нуля):
+В браузере: `@imgly/background-removal` → студийный фон (`#F5F5F5` / белый).  
+Ключ Gemini **не нужен**.
 
-1. Ключ: [Google AI Studio](https://aistudio.google.com/apikey)
-2. Vercel env: `GEMINI_API_KEY` (+ опционально `GEMINI_IMAGE_MODEL`)
-3. Redeploy
-4. Editor: загрузить фото → тип кадра → **Очистить фон и выровнять стиль** → разметить ДШВ
+1. Загрузить фото  
+2. Тип кадра → **Очистить фон и выровнять стиль**  
+3. Разметить Д×Ш×В  
 
-Локально: `.env` + `npx vercel dev`.
-
-`POST /api/generate` `{ kind, imageBase64, mimeType }`
+Первый запуск скачает модель (~40 МБ) с CDN.
 
 ## Эталоны стиля
 

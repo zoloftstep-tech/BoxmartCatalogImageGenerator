@@ -16,7 +16,7 @@
         <p class="brand-mark">BOXMART</p>
         <h1>Catalog Annotate</h1>
         <p class="brand-lead">Разметка Д×Ш×В и FEFCO на каталожных фото</p>
-        <p class="sub-note">Загрузите фото → Gemini очистит фон и приведёт к единому стилю → разметьте Д×Ш×В вручную.</p>
+        <p class="sub-note">Загрузите фото → очистка фона в браузере (без ключей) → студийный фон → разметьте Д×Ш×В.</p>
       </header>
 
       <section class="block">
@@ -29,15 +29,15 @@
       </section>
 
       <section class="block">
-        <h2>Обработка (Gemini)</h2>
+        <h2>Обработка</h2>
         <label class="field">Тип кадра
           <select id="genKind">
-            <option value="assembled">Собранная</option>
-            <option value="diecut">Развёртка</option>
+            <option value="assembled">Собранная · фон #F5F5F5</option>
+            <option value="diecut">Развёртка · белый фон</option>
           </select>
         </label>
         <button type="button" id="generateBtn" class="primary" disabled>Очистить фон и выровнять стиль</button>
-        <p class="hint" id="genStatus">Сначала загрузите фото коробки.</p>
+        <p class="hint" id="genStatus">Сначала загрузите фото коробки. Первый запуск скачает модель (~40 МБ).</p>
       </section>
 
       <section class="block">
@@ -111,6 +111,6 @@
       </div>
     </main>
   </div>
-  <script src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
