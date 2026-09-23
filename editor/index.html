@@ -2,9 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f9f9f9" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Boxmart · Catalog Annotate</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,34 +11,19 @@
 </head>
 <body>
   <div class="app">
-    <header class="mobile-bar">
-      <div>
-        <p class="brand-mark">BOXMART</p>
-        <h1>Catalog Annotate</h1>
-      </div>
-      <button type="button" id="togglePanel" class="ghost panel-toggle" aria-expanded="true">Панель</button>
-    </header>
-
-    <main class="stage-wrap">
-      <div class="stage" id="stage">
-        <canvas id="canvas"></canvas>
-        <div class="empty" id="empty">Загрузите фото коробки</div>
-      </div>
-    </main>
-
-    <aside class="sidebar" id="sidebar">
-      <header class="brand desktop-only">
+    <aside class="sidebar">
+      <header class="brand">
         <p class="brand-mark">BOXMART</p>
         <h1>Catalog Annotate</h1>
         <p class="brand-lead">Разметка Д×Ш×В и FEFCO на каталожных фото</p>
-        <p class="sub-note">Загрузите фото → очистка фона → студийный фон → разметьте Д×Ш×В.</p>
+        <p class="sub-note">Загрузите фото → очистка фона в браузере (без ключей) → студийный фон → разметьте Д×Ш×В.</p>
       </header>
 
       <section class="block">
         <h2>Фото</h2>
         <label class="file-btn">
-          Выбрать / снять фото
-          <input id="fileInput" type="file" accept="image/*" capture="environment" hidden />
+          Выбрать изображение
+          <input id="fileInput" type="file" accept="image/*" hidden />
         </label>
         <button id="clearImage" type="button" class="ghost" disabled>Убрать фото</button>
       </section>
@@ -54,18 +37,18 @@
           </select>
         </label>
         <button type="button" id="generateBtn" class="primary" disabled>Очистить фон и выровнять стиль</button>
-        <p class="hint" id="genStatus">Сначала загрузите фото. Первый запуск скачает модель (~40 МБ).</p>
+        <p class="hint" id="genStatus">Сначала загрузите фото коробки. Первый запуск скачает модель (~40 МБ).</p>
       </section>
 
-      <section class="block tools-block desktop-tools">
+      <section class="block">
         <h2>Инструмент</h2>
-        <div class="tools" role="toolbar" data-tools>
-          <button type="button" class="tool active" data-tool="select" title="Выбор">Выбор</button>
-          <button type="button" class="tool" data-tool="dim-h" title="Размер →">Размер →</button>
-          <button type="button" class="tool" data-tool="dim-v" title="Размер ↓">Размер ↓</button>
-          <button type="button" class="tool" data-tool="dim-free" title="Размер ∠">Размер ∠</button>
-          <button type="button" class="tool" data-tool="label" title="Текст">Текст</button>
-          <button type="button" class="tool" data-tool="fefco" title="FEFCO">FEFCO</button>
+        <div class="tools" role="toolbar">
+          <button type="button" class="tool active" data-tool="select" title="Выбор / перетаскивание">Выбор</button>
+          <button type="button" class="tool" data-tool="dim-h" title="Горизонтальный размер">Размер →</button>
+          <button type="button" class="tool" data-tool="dim-v" title="Вертикальный размер">Размер ↓</button>
+          <button type="button" class="tool" data-tool="dim-free" title="Размер под любым углом">Размер ∠</button>
+          <button type="button" class="tool" data-tool="label" title="Подпись">Текст</button>
+          <button type="button" class="tool" data-tool="fefco" title="FEFCO бейдж">FEFCO</button>
         </div>
       </section>
 
@@ -81,7 +64,7 @@
           </select>
         </label>
         <label class="field">Значение
-          <input id="value" type="text" value="450" placeholder="450 или 0427" inputmode="decimal" />
+          <input id="value" type="text" value="450" placeholder="450 или 0427" />
         </label>
         <label class="field">Единицы
           <input id="unit" type="text" value="мм" />
@@ -90,7 +73,7 @@
           <input id="plaque" type="checkbox" />
           FEFCO: тёмная подложка
         </label>
-        <p class="hint" id="hint">Выберите инструмент и работайте на холсте.</p>
+        <p class="hint" id="hint">Выберите инструмент и кликните на холсте (для размера — протяните).</p>
       </section>
 
       <section class="block panel-card" id="selectedPanel" hidden>
@@ -99,11 +82,12 @@
           <input id="selText" type="text" />
         </label>
         <label class="field">Длина линии, px
-          <input id="selLength" type="number" min="20" step="1" inputmode="numeric" />
+          <input id="selLength" type="number" min="20" step="1" />
         </label>
         <label class="field">Угол подписи, °
-          <input id="selAngle" type="number" step="1" inputmode="decimal" />
+          <input id="selAngle" type="number" step="1" />
         </label>
+        <p class="hint">Подпись — тянуть за текст. Поворот — круглая ручка. Концы стрелок — угол линии.</p>
         <div class="row">
           <button type="button" id="bringFront" class="ghost">Наверх</button>
           <button type="button" id="deleteSel" class="danger">Удалить</button>
@@ -120,14 +104,12 @@
       </section>
     </aside>
 
-    <nav class="tool-dock" aria-label="Инструменты" data-tools>
-      <button type="button" class="tool active" data-tool="select">Выбор</button>
-      <button type="button" class="tool" data-tool="dim-h">→</button>
-      <button type="button" class="tool" data-tool="dim-v">↓</button>
-      <button type="button" class="tool" data-tool="dim-free">∠</button>
-      <button type="button" class="tool" data-tool="label">Aa</button>
-      <button type="button" class="tool" data-tool="fefco">F</button>
-    </nav>
+    <main class="stage-wrap">
+      <div class="stage" id="stage">
+        <canvas id="canvas"></canvas>
+        <div class="empty" id="empty">Загрузите фото коробки</div>
+      </div>
+    </main>
   </div>
   <script type="module" src="./app.js"></script>
 </body>
