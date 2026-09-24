@@ -10,6 +10,10 @@ const ESM_URL = `https://esm.sh/@imgly/background-removal@${IMG_LY_VERSION}`;
 const MODEL = "isnet";
 const MAX_INPUT_SIDE = 2800;
 
+/** Studio canvas (assembled). Match catalog look — not pure white. */
+const BG_ASSEMBLED = "#F5F5F5";
+const BG_DIECUT = "#FFFFFF";
+
 let removeBackgroundFn = null;
 
 async function getRemoveBackground() {
@@ -63,7 +67,30 @@ function imageToPngBlob(source) {
 }
 
 /**
- * Soft model alpha → crisp cardboard edges (threshold + short ramp).
+ * Estimate leftover background color from near-transparent pixels (for unmixing).
+ * @param {Uint8ClampedArray} d
+ * @returns {[number, number, number]}
+ */
+function estimateFringeBg(d) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (a > 0 && a < 40) {
+      r += d[i];
+      g += d[i + 1];
+      b += d[i + 2];
+      n++;
+    }
+  }
+  if (n < 32) return [245, 245, 245];
+  return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
+}
+
+/**
+ * Soft model matte → binary-ish alpha + RGB decontamination (kills kraft fringe blur).
  * @param {HTMLImageElement} img
  * @returns {HTMLCanvasElement}
  */
@@ -77,15 +104,118 @@ function hardenCutout(img) {
   ctx.drawImage(img, 0, 0);
   const imageData = ctx.getImageData(0, 0, w, h);
   const d = imageData.data;
-  const lo = 48;
-  const hi = 160;
-  const span = hi - lo;
-  for (let i = 3; i < d.length; i += 4) {
-    const a = d[i];
-    if (a <= lo) d[i] = 0;
-    else if (a >= hi) d[i] = 255;
-    else d[i] = Math.round(((a - lo) / span) * 255);
+  const [br, bg, bb] = estimateFringeBg(d);
+
+  // Unmix semi-transparent pixels against estimated leftover bg, then hard threshold.
+  const cut = 110;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (a === 0) continue;
+    if (a < 255) {
+      const af = a / 255;
+      if (af > 0.02) {
+        d[i] = Math.max(0, Math.min(255, Math.round((d[i] - (1 - af) * br) / af)));
+        d[i + 1] = Math.max(
+          0,
+          Math.min(255, Math.round((d[i + 1] - (1 - af) * bg) / af)),
+        );
+        d[i + 2] = Math.max(
+          0,
+          Math.min(255, Math.round((d[i + 2] - (1 - af) * bb) / af)),
+        );
+      }
+    }
+    d[i + 3] = a >= cut ? 255 : 0;
   }
+
+  // One-pixel inward dilate on RGB for boundary pixels that flipped opaque next to void
+  // (fills tiny holes from aggressive threshold without re-softening).
+  const copy = new Uint8ClampedArray(d);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      if (copy[i + 3] !== 0) continue;
+      let sr = 0;
+      let sg = 0;
+      let sb = 0;
+      let sn = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const j = ((y + dy) * w + (x + dx)) * 4;
+          if (copy[j + 3] === 255) {
+            sr += copy[j];
+            sg += copy[j + 1];
+            sb += copy[j + 2];
+            sn++;
+          }
+        }
+      }
+      // only close 1px gaps fully surrounded — skip (handled below by erode path)
+      if (sn >= 6) {
+        d[i] = Math.round(sr / sn);
+        d[i + 1] = Math.round(sg / sn);
+        d[i + 2] = Math.round(sb / sn);
+        d[i + 3] = 255;
+      }
+    }
+  }
+
+  // Erode 1px: drop opaque pixels that touch transparent (removes fuzzy outline blobs)
+  const afterFill = new Uint8ClampedArray(d);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      if (afterFill[i + 3] !== 255) continue;
+      let touch = false;
+      for (let dy = -1; dy <= 1 && !touch; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          if (afterFill[((y + dy) * w + (x + dx)) * 4 + 3] === 0) {
+            touch = true;
+            break;
+          }
+        }
+      }
+      if (touch) {
+        // keep edge but ensure RGB from inward opaque neighbor (anti-fringe)
+        let sr = 0;
+        let sg = 0;
+        let sb = 0;
+        let sn = 0;
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            const ny = y + dy;
+            const nx = x + dx;
+            if (ny < 0 || nx < 0 || ny >= h || nx >= w) continue;
+            const j = (ny * w + nx) * 4;
+            if (afterFill[j + 3] !== 255) continue;
+            // prefer interior: not itself on boundary
+            let isInterior = true;
+            for (let ey = -1; ey <= 1 && isInterior; ey++) {
+              for (let ex = -1; ex <= 1; ex++) {
+                const ey2 = ny + ey;
+                const ex2 = nx + ex;
+                if (ey2 < 0 || ex2 < 0 || ey2 >= h || ex2 >= w) continue;
+                if (afterFill[(ey2 * w + ex2) * 4 + 3] === 0) isInterior = false;
+              }
+            }
+            if (!isInterior) continue;
+            sr += afterFill[j];
+            sg += afterFill[j + 1];
+            sb += afterFill[j + 2];
+            sn++;
+          }
+        }
+        if (sn > 0) {
+          d[i] = Math.round(sr / sn);
+          d[i + 1] = Math.round(sg / sn);
+          d[i + 2] = Math.round(sb / sn);
+        }
+      }
+    }
+  }
+
   ctx.putImageData(imageData, 0, 0);
   return c;
 }
@@ -119,6 +249,26 @@ function alphaBBox(source) {
 }
 
 /**
+ * Soft contact shadow under the box only — no silhouette halo (that blurred the top).
+ */
+function drawContactShadow(ctx, x, y, sw, sh, canvasSide) {
+  const cx = x + sw * 0.5;
+  const cy = y + sh * 0.92;
+  const rx = sw * 0.42;
+  const ry = Math.max(10, sh * 0.045);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+  g.addColorStop(0, "rgba(0,0,0,0.22)");
+  g.addColorStop(0.55, "rgba(0,0,0,0.08)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
  * Place cutout on studio background.
  * @param {CanvasImageSource} cutout
  * @param {"assembled"|"diecut"} kind
@@ -129,7 +279,8 @@ export function compositeOnStudio(cutout, kind = "assembled") {
   const subject = document.createElement("canvas");
   subject.width = bbox.w;
   subject.height = bbox.h;
-  subject.getContext("2d").drawImage(
+  const sctx = subject.getContext("2d");
+  sctx.drawImage(
     cutout,
     bbox.x,
     bbox.y,
@@ -155,10 +306,11 @@ export function compositeOnStudio(cutout, kind = "assembled") {
   out.width = canvasSide;
   out.height = canvasSide;
   const ctx = out.getContext("2d");
+  // Nearest for upscale-free crisp edges when fit===1; high quality only when shrinking.
   ctx.imageSmoothingEnabled = fit < 1;
   ctx.imageSmoothingQuality = "high";
 
-  const bg = kind === "diecut" ? "#FFFFFF" : "#F5F5F5";
+  const bg = kind === "diecut" ? BG_DIECUT : BG_ASSEMBLED;
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvasSide, canvasSide);
 
@@ -166,17 +318,10 @@ export function compositeOnStudio(cutout, kind = "assembled") {
   const y = Math.round((canvasSide - sh) / 2);
 
   if (kind === "assembled") {
-    // Shadow under subject, then sharp redraw on top (shadowBlur alone softens edges).
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.18)";
-    ctx.shadowBlur = Math.max(14, Math.round(canvasSide * 0.016));
-    ctx.shadowOffsetY = Math.max(6, Math.round(canvasSide * 0.008));
-    ctx.drawImage(subject, x, y, sw, sh);
-    ctx.restore();
-    ctx.drawImage(subject, x, y, sw, sh);
-  } else {
-    ctx.drawImage(subject, x, y, sw, sh);
+    drawContactShadow(ctx, x, y, sw, sh, canvasSide);
   }
+
+  ctx.drawImage(subject, x, y, sw, sh);
 
   return out.toDataURL("image/png");
 }
